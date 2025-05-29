@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>oye_lga_weather_monitoring</title>
+  <style>
+    body {
+  font-family: Arial, Helvetica, sans-serif;
+  justify-content: center;
+  display: block;
+  align-items: center;
+  min-height: 100vh;
+  margin: 0;
+  background-image: url("hero-bg.jpg");
+}
+
+header {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background-size: cover;
+  background-position: center;
+  filter: brightness(0.5);
+  z-index: 0;
+}
+
+main {
+  position: relative;
+  z-index: 1;
+}
+
+form {
+  background-color: hsl(0, 0%, 100%);
+  text-align: center;
+  max-width: 600px;
+  width: 100%;
+  margin: auto;
+  padding: 25px;
+  border-radius: 10px;
+  box-shadow: 5px 5px 15px rgb(139, 139, 139);
+  box-sizing: border-box;
+}
+
+.form-row {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  align-items: center;
+}
+
+select {
+  flex: 1;
+  padding: 10px 15px;
+  border-radius: 5px;
+  outline: none;
+  box-shadow: 3px 1px 10px rgb(139, 139, 139);
+  border: none;
+  font-size: 1em;
+}
+
+button {
+  flex-shrink: 0;
+  border: none;
+  border-radius: 5px;
+  width: 80px;
+  height: 40px;
+  background-color: hsl(0, 100%, 50%);
+  color: white;
+  cursor: pointer;
+}
+
+button:hover {
+  background-color: hsl(0, 100%, 60%);
+}
+
+.location {
+  margin-top: 20px;
+  margin-bottom: 10px;
+  font-size: 50px;
+  font-weight: bold;
+  color: hsl(0, 100%, 50%);
+}
+
+.temperature {
+  margin-top: 0;
+  font-size: 35px;
+  font-weight: bold;
+}
+
+.weather-description {
+  font-style: italic;
+  font-weight: bold;
+  font-size: 30px;
+  margin-bottom: 0;
+  color: hsl(0, 0%, 30%);
+  font-family: 'Courier New', Courier, monospace;
+}
+
+.emoji-description {
+  margin-top: 0;
+  font-size: 80px;
+  margin-bottom: 0;
+}
+
+.error-message {
+  font-style: italic;
+  color: red;
+  font-weight: bold;
+  font-size: 20px;
+}
+
+.others1 {
+  color: hsl(0, 0%, 30%);
+  font-size: 18px;
+  font-weight: 600;
+  border-radius: 5px;
+  box-shadow: 3px 1px 10px rgb(139, 139, 139);
+  border: none;
+  display: inline-block;
+  place-content: center;
+  margin: 10px;
+  max-width: 500px;
+  width: 210px;
+  height: 100px;
+}
+
+.others2 {
+  color: hsl(0, 0%, 30%);
+  font-size: 18px;
+  font-weight: 600;
+  border-radius: 5px;
+  box-shadow: 3px 1px 10px rgb(139, 139, 139);
+  border: none;
+  display: inline-block;
+  place-content: center;
+  margin: 10px;
+  max-width: 500px;
+  width: 210px;
+  height: 250px;
+}
+p {
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.weather-info {
+  display: none;
+}
+
+.to-style {
+  width: 100%;
+}
+
+.day-time {
+  font-style: italic;
+}
+</style>
+</head>
+<body>
+  <form>
+    <h1>Oye LGA Weather Monitoring & Forecast Application</h1>
+    <div class="form-row">
+      <select class="js-select">
+        <option value="">-- Select a town --</option>
+        <option value="Oye">Oye-Ekiti</option>
+        <option value="Ayegbaju">Ayegbaju-Ekiti</option>
+        <option value="Ilupeju">Ilupeju-Ekiti</option>
+        <option value="Ire">Ire-Ekiti</option>
+        <option value="Omu">Omu-Ekiti </option>
+        <option value="Iloje">Iloje-Ekiti</option>
+        <option value="Ilemeso">Ilemeso-Ekiti</option>
+        <option value="Isan">Isan-Ekiti</option>
+        <option value="Osin">Osin-Ekiti</option>
+        <option value="Itapa">Itapa-Ekiti</option>
+        <option value="Imojo">Imojo-Ekiti</option>
+        <option value="Ijelu">Ijelu-Ekiti</option>
+        <option value="Ayede">Ayede-Ekiti</option>
+        <option value="Ilafon">Ilafon-Ekiti</option>
+        <option value="Itaji">Itaji-Ekiti</option>
+      </select>
+      <button type="button" class="js-button" title="Search">Search</button>
+    </div>
+    <div class="weather-info js-weather-info">
+      <p class="js-day-time-display"></p>
+    </div>
+  </form>
+
+ <script>
+const selectElement = document.querySelector('.js-select');
+const buttonElement = document.querySelector('.js-button');
+const weatherInfo = document.querySelector('.js-weather-info');
+const apiKey = "617168c98b947f07b6c31f9938117583";
+
+buttonElement.addEventListener('click', async () => {
+  const location = selectElement.value.trim();
+
+  if (!location) {
+    showError("Please select a town.");
+    return;
+  }
+
+  try {
+    const [currentData, forecastData] = await Promise.all([
+      fetchCurrentWeather(location),
+      fetchForecast(location)
+    ]);
+    displayWeather(currentData, forecastData);
+  } catch (error) {
+    showError(error.message);
+  }
+});
+
+async function fetchCurrentWeather(location) {
+  const apiUrl = `https://api.openweathermap.org/data/2.5/weather?q=${location},NG&appid=${apiKey}&units=metric`;
+  const response = await fetch(apiUrl);
+  if (!response.ok) {
+    throw new Error("Current weather data could not be retrieved.");
+  }
+  return await response.json();
+}
+
+async function fetchForecast(location) {
+  const apiUrl = `https://api.openweathermap.org/data/2.5/forecast?q=${location},NG&appid=${apiKey}&units=metric`;
+  const response = await fetch(apiUrl);
+  if (!response.ok) {
+    throw new Error("4-day forecast data could not be retrieved.");
+  }
+  return await response.json();
+}
+
+function displayDayTime() {
+  const displayElement = document.querySelector('.js-day-time-display');
+  const current = new Date();
+  const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  const day = days[current.getDay()];
+  const time = current.toLocaleTimeString();
+  displayElement.textContent = `${day}, ${time}`;
+}
+displayDayTime();
+setInterval(displayDayTime, 1000);
+
+function displayWeather(current, forecast) {
+  const {
+    name,
+    main: { temp, humidity, pressure },
+    weather,
+    wind: { speed }
+  } = current;
+
+  const description = weather[0].description;
+  const weatherId = weather[0].id;
+  const emoji = getEmoji(weatherId);
+
+  const forecastHTML = generateForecastHTML(forecast.list);
+
+  weatherInfo.innerHTML = `
+    <p class="day-time js-day-time-display"></p>
+    <p class="location">${name}-Ekiti</p>
+    <p class="temperature">Temperature: ${temp.toFixed(1)}°C</p>
+    <p class="weather-description">${description}</p>
+    <p class="emoji-description">${emoji}</p>
+    <div class="others1">Humidity: ${humidity}%</div>
+    <div class="others1">Pressure: ${pressure} hpa</div>
+    <div class="others1">Wind Speed: ${speed} m/s</div>
+    <h2 style="text-align:center; color:hsl(0, 0%, 30%)">4-Day Forecast</h2>
+    <div class="forecast-container" style="display:flex; flex-wrap:wrap; justify-content:center;">
+      ${forecastHTML}
+    </div>
+  `;
+  weatherInfo.style.display = "block";
+}
+
+function generateForecastHTML(forecastList) {
+  const dailyForecasts = {};
+
+  forecastList.forEach(entry => {
+    const date = entry.dt_txt.split(" ")[0];
+    const time = entry.dt_txt.split(" ")[1];
+    if (time === "12:00:00" && !dailyForecasts[date]) {
+      dailyForecasts[date] = entry;
+    }
+  });
+
+  return Object.values(dailyForecasts).slice(0, 4).map(entry => {
+    const dateObj = new Date(entry.dt_txt);
+    const day = dateObj.toLocaleDateString(undefined, { weekday: "short" });
+    const fullDate = dateObj.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+    const emoji = getEmoji(entry.weather[0].id);
+    const description = entry.weather[0].description;
+
+    return `
+      <div class="others2">
+        <p><strong>${day}</strong></p>
+        <p>${fullDate}</p>
+        <p>${emoji}</p>
+        <p>${entry.main.temp.toFixed(1)}°C</p>
+        <p style="font-style: italic;">${description}</p>
+      </div>
+    `;
+  }).join('');
+}
+
+
+
+function getEmoji(weatherId) {
+  switch (true) {
+    case (weatherId >= 200 && weatherId <= 232): return "⛈️";
+    case (weatherId >= 300 && weatherId <= 321): return "🌦️";
+    case (weatherId >= 500 && weatherId <= 531): return "🌧️";
+    case (weatherId >= 600 && weatherId <= 622): return "❄️";
+    case (weatherId >= 701 && weatherId <= 781): return "🌫️";
+    case (weatherId === 800): return "☀️";
+    case (weatherId === 801): return "🌥️";
+    case (weatherId === 802): return "☁️";
+    case (weatherId === 803): return "⛅";
+    case (weatherId === 804): return "🌤️";
+    default: return "❓";
+  }
+}
+
+function showError(message) {
+  weatherInfo.innerHTML = `<p class="error-message">${message}</p>`;
+  weatherInfo.style.display = "block";
+}
+</script>
+
+</body>
+</html>
